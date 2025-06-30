@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-
+import axios from "axios"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
@@ -13,46 +13,98 @@ import { useAuth } from "@/lib/auth-context"
 import { Eye, EyeOff, Mail, Lock, User, ArrowLeft } from "lucide-react"
 
 export default function SignupPage() {
+  const [showPassword, setShowPassword] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState("")
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     password: "",
     confirmPassword: "",
-    role: "customer" as "customer" | "store_owner",
+    role: "" as "customer" | "store_owner" | ""
   })
-  const [showPassword, setShowPassword] = useState(false)
-  const [error, setError] = useState("")
-  const { signup, isLoading } = useAuth()
+
   const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
+    setIsLoading(true)
 
-    if (!formData.name || !formData.email || !formData.password) {
+    // Form validation
+    if (!formData.name || !formData.email || !formData.password || !formData.confirmPassword || !formData.role) {
       setError("Please fill in all fields")
+      setIsLoading(false)
       return
     }
 
     if (formData.password !== formData.confirmPassword) {
       setError("Passwords do not match")
+      setIsLoading(false)
       return
     }
 
     if (formData.password.length < 6) {
-      setError("Password must be at least 6 characters")
+      setError("Password must be at least 6 characters long")
+      setIsLoading(false)
       return
     }
 
-    const success = await signup(formData.email, formData.password, formData.name, formData.role)
-    if (success) {
-      if (formData.role === "store_owner") {
-        router.push("/dashboard")
-      } else {
-        router.push("/stores")
+    try {
+      // Prepare the data for API call
+      const requestData = {
+        username: formData.name,
+        email: formData.email,
+        password: formData.password,
+        role: formData.role
       }
-    } else {
-      setError("Failed to create account")
+
+      // Make API call
+      const response = await axios.post('/api/stores/owner/create', requestData, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+
+      // Handle successful response
+      if (response.data) {
+        // Save token to localStorage if provided
+        if (response.data.token) {
+          localStorage.setItem('authToken', response.data.token)
+        }
+
+        // Save user data to localStorage
+        if (response.data.user) {
+          localStorage.setItem('userData', JSON.stringify(response.data.user))
+        }
+
+        // Save the entire response data if needed
+        localStorage.setItem('signupResponse', JSON.stringify(response.data))
+
+        // Success - redirect based on role
+        if (formData.role === 'store_owner') {
+          router.push('/dashboard/store')
+        } else {
+          router.push('/dashboard/customer')
+        }
+      }
+
+    } catch (error: any) {
+      // Handle API errors
+      if (error.response) {
+        // Server responded with error status
+        const errorMessage = error.response.data?.message || error.response.data?.error || 'Registration failed'
+        setError(errorMessage)
+      } else if (error.request) {
+        // Request was made but no response received
+        setError('Network error. Please check your connection and try again.')
+      } else {
+        // Something else happened
+        setError('An unexpected error occurred. Please try again.')
+      }
+      console.error('Signup error:', error)
+    } finally {
+      setIsLoading(false)
     }
   }
 

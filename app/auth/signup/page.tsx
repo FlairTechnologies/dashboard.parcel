@@ -79,13 +79,12 @@ export default function SignupPage() {
         }
 
         // Save the entire response data if needed
-        localStorage.setItem('signupResponse', JSON.stringify(response.data))
+        localStorage.setItem('loginResponse', JSON.stringify(response.data))
 
         // Success - redirect based on role
         if (formData.role === 'store_owner') {
-          router.push('/dashboard/store')
-        } else {
-          router.push('/dashboard/customer')
+          router.push('/auth/create-store')
+          return;
         }
       }
 
@@ -179,7 +178,7 @@ export default function SignupPage() {
                     <SelectValue placeholder="Select account type" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="customer">Customer - Shop from stores</SelectItem>
+                    {/* <SelectItem value="customer">Customer - Shop from stores</SelectItem> */}
                     <SelectItem value="store_owner">Store Owner - Sell products</SelectItem>
                   </SelectContent>
                 </Select>

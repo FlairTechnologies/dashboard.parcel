@@ -11,6 +11,6 @@ export default {
     ];
   },
   images: {
-    domains: ['unsplash.com'],
+    domains: ['unsplash.com', 'res.cloudinary.com'],
   },
 };

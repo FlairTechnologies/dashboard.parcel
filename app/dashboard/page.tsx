@@ -8,24 +8,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Package, ShoppingCart, Users, TrendingUp, Plus, Eye, Edit } from "lucide-react"
 import Link from "next/link"
+import { getStore, getStoreName } from "@/lib/storage"
 
 export default function DashboardPage() {
-  const { user, isLoading } = useAuth()
   const router = useRouter()
-
-  useEffect(() => {
-    if (!isLoading && (!user || user.role !== "store_owner")) {
-      router.push("/auth/login")
-    }
-  }, [user, isLoading, router])
-
-  if (isLoading) {
-    return <div className="min-h-screen bg-gray-50 flex items-center justify-center">Loading...</div>
-  }
-
-  if (!user || user.role !== "store_owner") {
-    return null
-  }
+  const store = getStore()
 
   const stats = [
     { name: "Total Products", value: "24", icon: Package, change: "+2 this week", color: "text-blue-600" },
@@ -53,14 +40,25 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-            <p className="text-gray-600">Welcome back, {user.name}! Here's what's happening with your store.</p>
+            <p className="text-gray-600">Welcome back, User! Here's what's happening with your store.</p>
           </div>
-          <Link href="/dashboard/products/add">
-            <Button className="bg-yellow-500 hover:bg-yellow-600 text-white">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Product
-            </Button>
-          </Link>
+          {store ?
+            (<Link href="/dashboard/products/add">
+              <Button className="bg-yellow-500 hover:bg-yellow-600 text-white">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Product
+              </Button>
+            </Link>)
+            :
+            (
+              <Link href="/auth/create-store">
+                <Button className="bg-yellow-500 hover:bg-yellow-600 text-white">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Store
+                </Button>
+              </Link>
+            )}
+
         </div>
 
         {/* Stats Grid */}
@@ -108,13 +106,12 @@ export default function DashboardPage() {
                     <div className="text-right">
                       <p className="font-semibold text-gray-900">{order.amount}</p>
                       <span
-                        className={`inline-block px-2 py-1 text-xs rounded-full ${
-                          order.status === "Delivered"
-                            ? "bg-green-100 text-green-800"
-                            : order.status === "Processing"
-                              ? "bg-yellow-100 text-yellow-800"
-                              : "bg-blue-100 text-blue-800"
-                        }`}
+                        className={`inline-block px-2 py-1 text-xs rounded-full ${order.status === "Delivered"
+                          ? "bg-green-100 text-green-800"
+                          : order.status === "Processing"
+                            ? "bg-yellow-100 text-yellow-800"
+                            : "bg-blue-100 text-blue-800"
+                          }`}
                       >
                         {order.status}
                       </span>

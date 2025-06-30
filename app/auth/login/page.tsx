@@ -1,14 +1,13 @@
 "use client"
 
 import type React from "react"
-
+import axios from "axios"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { useAuth } from "@/lib/auth-context"
 import { Eye, EyeOff, Mail, Lock, ArrowLeft } from "lucide-react"
 
 export default function LoginPage() {
@@ -16,30 +15,61 @@ export default function LoginPage() {
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState("")
-  const { login, isLoading } = useAuth()
+  const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError("")
+    e.preventDefault();
+    setError("");
+    setIsLoading(true);
 
+    // Form validation
     if (!email || !password) {
-      setError("Please fill in all fields")
-      return
+      setError("Please fill in all fields");
+      setIsLoading(false);
+      return;
     }
 
-    const success = await login(email, password)
-    if (success) {
-      // Redirect based on user role
-      if (email.includes("store")) {
-        router.push("/dashboard")
-      } else {
-        router.push("/stores")
-      }
-    } else {
-      setError("Invalid email or password")
+    if (!email.includes("@")) {
+      setError("Please enter a valid email address");
+      setIsLoading(false);
+      return;
     }
-  }
+
+    try {
+      const requestData = { email, password };
+
+      const response = await axios.post("/api/stores/owner/signin", requestData, {
+        headers: { "Content-Type": "application/json" },
+      });
+
+      // Check for store existence
+      if (!response.data.data.store) {
+        router.push("/auth/create-store");
+        return;
+      }
+
+      // Save auth data with store info
+      localStorage.setItem("loginResponse", JSON.stringify(response.data));
+      router.push("/dashboard/");
+    } catch (error: any) {
+      if (error.response) {
+        const errorMessage =
+          error.response.data?.message ||
+          error.response.data?.error ||
+          "Login failed";
+        setError(errorMessage);
+      } else if (error.request) {
+        setError("Network error. Please check your connection and try again.");
+      } else {
+        setError("An unexpected error occurred. Please try again.");
+      }
+      console.error("Login error:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -127,13 +157,13 @@ export default function LoginPage() {
               </p>
             </div>
 
-            <div className="mt-6 pt-6 border-t border-gray-200">
+            {/* <div className="mt-6 pt-6 border-t border-gray-200">
               <div className="text-sm text-gray-500 space-y-2">
                 <p className="font-medium">Demo accounts:</p>
                 <p>Store Owner: store@example.com / password</p>
                 <p>Customer: customer@example.com / password</p>
               </div>
-            </div>
+            </div> */}
           </CardContent>
         </Card>
       </div>

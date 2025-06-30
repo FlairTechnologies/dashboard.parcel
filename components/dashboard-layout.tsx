@@ -39,6 +39,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const handleLogout = () => {
     logout()
+    localStorage.removeItem("loginResponse")
     router.push("/auth/login")
   }
 

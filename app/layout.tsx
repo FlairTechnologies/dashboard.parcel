@@ -13,9 +13,8 @@ const poppins = Poppins({
 })
 
 export const metadata: Metadata = {
-  title: "ParcelShop - Your Local Shopping Destination",
-  description: "Discover and shop from the best local stores. Fast delivery, great prices.",
-    generator: 'v0.dev'
+  title: "Parcel",
+  description: "Fast delivery, great prices.",
 }
 
 export default function RootLayout({

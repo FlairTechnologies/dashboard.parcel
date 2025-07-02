@@ -9,6 +9,8 @@ import { Badge } from "@/components/ui/badge"
 import { Search, Plus, Edit, Trash2, Eye } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
+import axios from "axios"
+import { getAccessToken, getUser } from "@/lib/storage"
 
 export default function ProductsPage() {
   const [searchQuery, setSearchQuery] = useState("")
@@ -26,21 +28,24 @@ export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const store = getUser()
+  const token = getAccessToken()
 
   // Get storeId from somewhere (props, context, or route params)
-  const storeId = "6862be50322f4a7f8c14690e" // Replace with actual storeId
+  const storeId = store?.id // Replace with actual storeId
 
   useEffect(() => {
     const fetchProducts = async () => {
+
       try {
         setLoading(true)
-        const response = await fetch(`/api/products/stores/${storeId}`)
-        const result = await response.json()
-        
-        if (result.status === 200) {
-          setProducts(result.data)
+        const response = await axios.get(`/api/products/stores/${storeId}`, { headers: { Authorization: `Bearer ${token}` } })
+
+
+        if (response.status === 200) {
+          setProducts(response.data.data)
         } else {
-          setError(result.message || "Failed to fetch products")
+          setError(response.data || "Failed to fetch products")
         }
       } catch (err) {
         setError("An error occurred while fetching products")
@@ -53,12 +58,12 @@ export default function ProductsPage() {
     fetchProducts()
   }, [storeId])
 
-  const filteredProducts = products.filter((product) => 
+  const filteredProducts = products.filter((product) =>
     product.descr?.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
   // Transform API data to match component expectations
-  const transformProduct = (product:any) => ({
+  const transformProduct = (product: any) => ({
     id: product._id,
     name: product.descr || "Unnamed Product",
     price: parseFloat(product.price) || 0,
@@ -141,14 +146,14 @@ export default function ProductsPage() {
           {filteredProducts.map((product) => {
             const transformedProduct = transformProduct(product)
             const finalPrice = transformedProduct.discount > 0 ? transformedProduct.discountPrice : transformedProduct.price
-            
+
             return (
               <Card key={transformedProduct.id} className="overflow-hidden">
                 <div className="relative h-48">
-                  <Image 
-                    src={transformedProduct.image} 
-                    alt={transformedProduct.name} 
-                    fill 
+                  <Image
+                    src={transformedProduct.image}
+                    alt={transformedProduct.name}
+                    fill
                     className="object-cover"
                     onError={(e: any) => {
                       e.target.src = "/placeholder.svg"
@@ -216,8 +221,8 @@ export default function ProductsPage() {
                 {searchQuery ? "No products found" : "No products yet"}
               </h3>
               <p className="text-gray-600 mb-4">
-                {searchQuery 
-                  ? "Try adjusting your search or add a new product." 
+                {searchQuery
+                  ? "Try adjusting your search or add a new product."
                   : "Start by adding your first product to your store."
                 }
               </p>
